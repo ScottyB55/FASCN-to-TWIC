@@ -1,6 +1,6 @@
 # Description
 Takes an input FASCN represented as a Hex string
-and converts it inot a TWIC string 
+and converts it into a TWIC string 
 
 ## How to Run
 Run the test file provided for a quick check
