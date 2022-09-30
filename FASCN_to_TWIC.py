@@ -54,6 +54,9 @@ def fascn_to_twic(FASCN_hex_string):
         except Exception:
             raise Exception("Invalid input")
             return
+        
+        if ((index == 0) & (str_parse != "SS")):
+            raise Exception("Doesn't start with SS")
             
         strings.append(str_parse)
     
