@@ -5,27 +5,22 @@ Created on Thu Sep 29 17:19:23 2022
 @author: srbur
 """
 
-import binascii
-
-"""
-Function Definitions
-"""
-# split up a binary string starting with '0b' into chunks
-# returns a list
+# split up a string starting with '0b' into clusters of length cluster_length
 # https://pythonexamples.org/python-split-string-into-specific-length-chunks/
-def string_to_chunks(str, chunk_length):
+def string_to_clusters(str, cluster_length):
     str = str[2:] # chop off the '0b'
-    chunks = [str[i:i+chunk_length] for i in range(0, len(str), chunk_length)]
+    chunks = [str[i:i+cluster_length] for i in range(0, len(str), cluster_length)]
     return chunks
 
-def b5_to_string(strb):
+# convert a cluster (5 bit binary string) into its corresponding string
+def cluster_5b_to_string(strb):
     # chop off the parity bit and reverse for MSB first
     # https://www.w3schools.com/python/python_howto_reverse_string.asp
     MSB_first_no_parity = strb[3::-1]
-    # convert the string to a decimal
+    # convert the binary string to a decimal
     # https://stackoverflow.com/questions/2072351/python-conversion-from-binary-string-to-hexadecimal
     decimal_value = int(MSB_first_no_parity, 2)
-    # convert the decimal to the real thing
+    # convert the cluster decimal into its corresponding string
     if decimal_value < 10:
         return str(decimal_value)
     elif decimal_value == 11:
@@ -35,38 +30,54 @@ def b5_to_string(strb):
     elif decimal_value == 15:
         return "ES"
     else:
-        raise Exception("Invalid hex. Must be mapped to a value")
+        raise Exception("Invalid cluster conversion: " + str(decimal_value))
         return
 
+# convert a FASCN hex string into a TWIC string
 def fascn_to_twic(FASCN_hex_string):
-    # Convert the hex string to a binary string
+    # Check for invalid FASCN length
+    if (len(FASCN_hex_string) != 50):
+        raise Exception("Invalid FASCN string length. Expected length is 50.")
+        return
+    
+    # Convert the FASCN hex string to a binary string
     # https://www.skillsugar.com/how-to-convert-hexadecimal-to-binary-in-python#:~:text=To%20convert%20hexadecimal%20to%20binary%20form%2C%20first%2C%20convert%20it%20to,get%20binary%20from%20the%20decimal.
     FASCN_binary_string = bin(int(FASCN_hex_string, 16))
     
-    # split up the binary string into groups of 5 
-    # this is for 4 bits of hex and 1 bit of parity
-    FASCN_group_5_bits = string_to_chunks(FASCN_binary_string, 5)
+    # split up the binary string into clusters of 5 bits
+    # 4 bits for hex and 1 bit for parity
+    FASCN_5_bit_clusters = string_to_clusters(FASCN_binary_string, 5)
     
-    strings = []
-    for index, value in enumerate(FASCN_group_5_bits):
+    # go through the clusters and convert them into their corresponding string
+    str_clusters = []
+    for index, value in enumerate(FASCN_5_bit_clusters):
         try:
-            str_parse = b5_to_string(value)
-        except Exception:
-            raise Exception("Invalid input")
+            str_cluster = cluster_5b_to_string(value)
+        # pass on the exception from cluster_5b_to_string()
+        except Exception as e:
+            raise Exception("Cluster index " + index + ": " + str(e))
             return
-        
-        if ((index == 0) & (str_parse != "SS")):
-            raise Exception("Doesn't start with SS")
             
-        strings.append(str_parse)
+        str_clusters.append(str_cluster)
     
-    agency_code = strings[1:5]
-    system_code = strings[6:10]
-    credential_number = strings[11:17]
+    # Check for invalid FASCNs
+    # This list is incomplete. It doesn't check for everything
+    if (str_clusters[0] != "SS"):
+        raise Exception("FASCN doesn't start with SS")
+        return
+    if (str_clusters[38] != "ES"):
+        raise Exception("FASCN doesn't end with ES")
+        return
     
-    arrTWIC = agency_code + system_code + credential_number;
-    strTWIC = ""
-    for string in arrTWIC:
-        strTWIC += string;
+    # Split the cluster strings up into desired codes
+    agency_code = str_clusters[1:5]
+    system_code = str_clusters[6:10]
+    credential_number = str_clusters[11:17]
     
-    return strTWIC
+    # Reconstruct these codes as a TWIC String
+    array_TWIC = agency_code + system_code + credential_number;
+    str_TWIC = ""
+    for string in array_TWIC:
+        str_TWIC += string;
+    
+    return str_TWIC
