@@ -5,43 +5,64 @@ Created on Thu Sep 29 17:19:23 2022
 @author: srbur
 """
 
-# split up a string starting with '0b' into clusters of length cluster_length
-# https://pythonexamples.org/python-split-string-into-specific-length-chunks/
 def string_to_clusters(str, cluster_length):
+    """
+    splits up a string starting with '0b' into clusters of length cluster_length
+
+    Parameters
+        str (string): a binary string starting with '0b'
+        cluster_length (int): how long should each cluster be? (5)
+
+    Returns
+        chunks (list): a list of strings representing each binary cluster,
+            each of length cluster_length
+    """
     str = str[2:] # chop off the '0b'
     chunks = [str[i:i+cluster_length] for i in range(0, len(str), cluster_length)]
     return chunks
 
-# convert a cluster (5 bit binary string) into its corresponding string
 def cluster_5b_to_string(strb):
+    """
+    converts a cluster (5 bit binary string) into its corresponding value (string)
+
+    Parameters
+        strb (string) : a 5 bit binary string
+
+    Returns
+        A single character digit or a 2 character sentinel 
+    """
     # chop off the parity bit and reverse for MSB first
-    # https://www.w3schools.com/python/python_howto_reverse_string.asp
     MSB_first_no_parity = strb[3::-1]
     # convert the binary string to a decimal
-    # https://stackoverflow.com/questions/2072351/python-conversion-from-binary-string-to-hexadecimal
     decimal_value = int(MSB_first_no_parity, 2)
     # convert the cluster decimal into its corresponding string
     if decimal_value < 10:
         return str(decimal_value)
-    elif decimal_value == 11:
+    if decimal_value == 11:
         return "SS"
-    elif decimal_value == 13:
+    if decimal_value == 13:
         return "FS"
-    elif decimal_value == 15:
+    if decimal_value == 15:
         return "ES"
-    else:
-        raise Exception("Invalid cluster conversion: " + str(decimal_value))
-        return
+    # no matches
+    raise Exception("Invalid cluster conversion: " + str(decimal_value))
 
-# convert a FASCN hex string into a TWIC string
 def fascn_to_twic(FASCN_hex_string):
+    """
+    converts a FASCN hex string into a TWIC string
+
+    Parameters
+        FASCN_hex_string (string) : a 50 character long hex string
+
+    Returns
+        A TWIC string
+    """
     # Check for invalid FASCN length
     if (len(FASCN_hex_string) != 50):
         raise Exception("Invalid FASCN string length. Expected length is 50.")
         return
     
     # Convert the FASCN hex string to a binary string
-    # https://www.skillsugar.com/how-to-convert-hexadecimal-to-binary-in-python#:~:text=To%20convert%20hexadecimal%20to%20binary%20form%2C%20first%2C%20convert%20it%20to,get%20binary%20from%20the%20decimal.
     FASCN_binary_string = bin(int(FASCN_hex_string, 16))
     
     # split up the binary string into clusters of 5 bits
@@ -56,7 +77,6 @@ def fascn_to_twic(FASCN_hex_string):
         # pass on the exception from cluster_5b_to_string()
         except Exception as e:
             raise Exception("Cluster index " + index + ": " + str(e))
-            return
             
         str_clusters.append(str_cluster)
     
@@ -64,10 +84,8 @@ def fascn_to_twic(FASCN_hex_string):
     # This list is incomplete. It doesn't check for everything
     if (str_clusters[0] != "SS"):
         raise Exception("FASCN doesn't start with SS")
-        return
     if (str_clusters[38] != "ES"):
         raise Exception("FASCN doesn't end with ES")
-        return
     
     # Split the cluster strings up into desired codes
     agency_code = str_clusters[1:5]
